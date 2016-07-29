@@ -29,7 +29,11 @@ module Data.Comp.Term
      unTerm,
      simpCxt,
      toCxt,
-     constTerm
+     constTerm,
+     CContext,
+     CTerm,
+     toCContext,
+     toCTerm
      ) where
 
 import Control.Applicative hiding (Const)
@@ -147,3 +151,24 @@ instance (Traversable f) => Traversable (Cxt h f) where
 unTerm :: Cxt NoHole f a -> f (Cxt NoHole f a)
 {-# INLINE unTerm #-}
 unTerm (Term t) = t
+
+
+{-| Church encoding of Term and Context for external users to consume Terms and Context at low level -}
+
+type CTerm    f   = forall x . (f x -> x) -> x
+type CContext f a = forall x . (a -> x) -> (f x -> x) -> x
+
+
+fold1 :: Functor f => forall x . (f x -> x) -> Term f -> x
+fold1 k (Term ft) = k (fold1 k <$> ft)
+
+toCTerm :: Functor f => Term f -> CTerm f
+toCTerm t k = fold1 k t
+
+fold2 :: Functor f => forall x a. (a -> x) -> (f x -> x) -> Context f a -> x
+fold2 f k (Term ft) = k (fold2 f k <$> ft)
+fold2 f _ (Hole a)  = f a
+
+toCContext :: Functor f => Context f a -> CContext f a
+toCContext t f k = fold2 f k t
+
