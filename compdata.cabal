@@ -190,7 +190,7 @@ library
   Build-Depends:	base >= 4.7, base < 5, template-haskell, containers, mtl >= 2.2.1, QuickCheck >= 2 && < 2.9, derive,
                         deepseq, th-expand-syns, transformers, tree-view
   Extensions:           FlexibleContexts
-  hs-source-dirs:	src
+  hs-source-dirs:	src examples
   ghc-options:          -W
 
 

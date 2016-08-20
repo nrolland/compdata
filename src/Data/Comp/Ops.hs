@@ -131,6 +131,31 @@ instance (Subsume (Found p1) f1 g, Subsume (Found p2) f2 g)
                              _      -> Nothing
 
 
+data Path f g where
+  HereV  :: Path f f
+  LeftV  :: Path f g -> Path f (g :+: h)
+  RightV :: Path f g -> Path f (h :+: g)
+  SumV   :: Path f g -> Path f' g -> Path (f :+: f') g
+
+-- fonction getpath comme subsume
+class GetPath (e :: Emb) (f :: * -> *) (g :: * -> *) where
+  getPath :: Proxy e -> Path f g
+
+-- nb : how much of that could be replaced with Dict ? GetPath rendrait a la fois Dict et le path..
+instance GetPath (Found Here) f f where -- reflexive category  f -> f
+    getPath _ = HereV
+instance GetPath (Found p) f g => GetPath (Found (Le p)) f (g :+: g') where -- f -> g => f -> g + g' -- union symetrique
+    getPath _ = LeftV $ getPath (P :: Proxy (Found p))
+instance GetPath (Found p) f g => GetPath (Found (Ri p)) f (g' :+: g) where -- f -> g => f -> g' + g -- comme poset avec Union
+    getPath _ = RightV $ getPath  (P :: Proxy (Found p))                    -- vient de ce que element de la Stone Algebra sont
+                                                                            -- sont fermes par union puisque
+instance (GetPath (Found p1) f1 g, GetPath (Found p2) f2 g) -- f -> g, f' -> g => f + f' -> g comme poset avec union
+    => GetPath (Found (Sum p1 p2)) (f1 :+: f2) g where
+    getPath _ = SumV (getPath (P :: Proxy (Found p1))) ( getPath (P :: Proxy (Found p2)))
+
+type f :<<: g = (GetPath (Elem f g) f g)
+path :: forall f g . (f :<<: g)  => Path f g
+path = getPath (P :: Proxy (Elem f g))
 
 -- | A constraint @f :<: g@ expresses that the signature @f@ is
 -- subsumed by @g@, i.e. @f@ can be used to construct elements in @g@.
